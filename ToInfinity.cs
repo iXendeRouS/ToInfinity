@@ -62,7 +62,7 @@ public class ToInfinity : BloonsTD6Mod
         int timeToUpdate = currentUpdateTime - previousUpdateTime;
         int nextUpdateTimeEstimate = currentUpdateTime + timeToUpdate;
 
-        // if next update is beyond TIME_STOP_INTERVAL, or LOTN blackhole is not available
+        // if next update is beyond TIME_STOP_INTERVAL AND LOTN blackhole is not available
         if ((nextUpdateTimeEstimate - lastTimeStopActivation >= TIME_STOP_INTERVAL) && (currentUpdateTime <= InGame.instance.GetSimulation().roundStartTime + LOTN_COOLDOWN))
         {
             ActivateTimeStop(currentUpdateTime);
