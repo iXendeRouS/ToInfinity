@@ -90,12 +90,14 @@ public class ToInfinity : BloonsTD6Mod
     }
 
     public override void OnRoundStart()
-    {       
+    {              
+        base.OnRoundStart();
+
+        if (!Settings.EnableMod) return;
+
         FindAbilities();
         bads.Clear();
 
-        base.OnRoundStart();
-        
         previousUpdateTime = InGame.instance.GetSimulation().roundStartTime;
         ActivateTimeStop(previousUpdateTime);   // have to timestop here as OnUpdate only timestops when the TIME_STOP_INTERVAL is exceeded
     }
