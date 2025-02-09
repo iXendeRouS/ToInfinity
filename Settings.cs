@@ -19,6 +19,11 @@ namespace ToInfinity
         {
             displayName = "CreateSoundOn"
         };
+
+        public static readonly ModSettingHotkey actionKey = new(UnityEngine.KeyCode.Backslash)
+        {
+            displayName = "actionKey"
+        };
     }
 }
 

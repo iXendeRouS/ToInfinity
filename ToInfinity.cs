@@ -9,6 +9,7 @@ using Il2CppAssets.Scripts.Models.Powers.Effects;
 using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Simulation.Bloons;
 using System.Collections.Generic;
+using System.Linq;
 
 [assembly: MelonInfo(typeof(ToInfinity.ToInfinity), ModHelperData.Name, ModHelperData.Version, ModHelperData.RepoOwner)]
 [assembly: MelonGame("Ninja Kiwi", "BloonsTD6")]
@@ -57,6 +58,15 @@ public class ToInfinity : BloonsTD6Mod
         base.OnUpdate();
         if (!Settings.EnableMod || InGame.instance?.bridge == null) return;
 
+        // remove dead bads, although I should really patch Bloon.OnDestroy or something idk
+        bads.RemoveAll(b => b.isDestroyed);
+
+        //if (Settings.actionKey.JustPressed())
+        //{
+        //    MelonLogger.Msg("bads count: " + bads.Count);
+        //    MelonLogger.Msg("null bads count: " + bads.Count(b => b == null));
+        //}
+
         // calculate the estimated time of the next update to ensure 100% timestop uptime
         int currentUpdateTime = InGame.instance.GetSimulation().roundTime.elapsed;
         int timeToUpdate = currentUpdateTime - previousUpdateTime;
@@ -80,8 +90,9 @@ public class ToInfinity : BloonsTD6Mod
     }
 
     public override void OnRoundStart()
-    {
+    {       
         FindAbilities();
+        bads.Clear();
 
         base.OnRoundStart();
         
