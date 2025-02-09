@@ -17,19 +17,20 @@ namespace ToInfinity;
 
 public class ToInfinity : BloonsTD6Mod
 {
-    private const int TIME_STOP_INTERVAL = 840;
-    private const int LOTN_COOLDOWN = 8316;
+    // time is measured in 60hz intervals
+    private const int TIME_STOP_INTERVAL = 840; // 14 seconds, as a timestop with longer timestops mk is 15s
+    private const int LOTN_COOLDOWN = 8316;     // 138.6 seconds, assumes energiser and shorter cooldown mk works like 180 * (1 - 0.2 - 0.03)
 
     private static PowerModel? timestop;
 
-    private static bool shouldTimeStop = true;
     private static int lastTimeStopActivation = 0;
     private int previousUpdateTime = 0;
 
-    private AbilityToSimulation? hex;
-    private AbilityToSimulation? hook;
-
-    private readonly List<Bloon> bads = new();
+    // abilities to automate that cant simply be techbotted
+    private AbilityToSimulation? hex;   // techbotting ezili would trigger totem which loses lives. Not a big deal but eh
+    private AbilityToSimulation? hook;  // ensure navarch only hooks in BADs to not waste ability
+    
+    private readonly List<Bloon> bads = new();  // bads for navarch to hook
 
     public override void OnApplicationStart()
     {
@@ -40,10 +41,12 @@ public class ToInfinity : BloonsTD6Mod
     {
         base.OnNewGameModel(result);
 
+        // get and modify the timestop PowerModel
         timestop = result.GetPowerWithName("DartTime");
 
         if (timestop?.behaviors != null)
         {
+            // remove the flash / sound on activation given settings
             if (!Settings.CreateEffectOn) timestop.RemoveBehaviors<CreateEffectOnPowerModel>();
             if (!Settings.CreateSoundOn) timestop.RemoveBehaviors<CreateSoundOnPowerModel>();
         }
@@ -54,17 +57,13 @@ public class ToInfinity : BloonsTD6Mod
         base.OnUpdate();
         if (!Settings.EnableMod || InGame.instance?.bridge == null) return;
 
-        if (Settings.ToggleAutoTimestop.JustPressed())
-        {
-            shouldTimeStop = !shouldTimeStop;
-            MelonLogger.Msg($"Auto-time stop {(shouldTimeStop ? "enabled" : "disabled")}");
-        }
-
+        // calculate the estimated time of the next update to ensure 100% timestop uptime
         int currentUpdateTime = InGame.instance.GetSimulation().roundTime.elapsed;
         int timeToUpdate = currentUpdateTime - previousUpdateTime;
         int nextUpdateTimeEstimate = currentUpdateTime + timeToUpdate;
 
-        if (shouldTimeStop && (nextUpdateTimeEstimate - lastTimeStopActivation >= TIME_STOP_INTERVAL) && (currentUpdateTime <= InGame.instance.GetSimulation().roundStartTime + LOTN_COOLDOWN))
+        // if next update is beyond TIME_STOP_INTERVAL, or LOTN blackhole is available
+        if ((nextUpdateTimeEstimate - lastTimeStopActivation >= TIME_STOP_INTERVAL) && (currentUpdateTime <= InGame.instance.GetSimulation().roundStartTime + LOTN_COOLDOWN))
         {
             ActivateTimeStop(currentUpdateTime);
         }
@@ -74,16 +73,23 @@ public class ToInfinity : BloonsTD6Mod
         HandleAbilities();
     }
 
-    public override void OnRoundStart()
+    private void HandleAbilities()
     {
-        base.OnRoundStart();
-
-        bads.Clear();
-        shouldTimeStop = true;
-        previousUpdateTime = InGame.instance.GetSimulation().roundStartTime;
-        ActivateTimeStop(previousUpdateTime);
+        if (hex != null && hex.IsReady) hex.Activate();
+        if (hook != null && hook.IsReady && bads.Count > 0) hook.Activate();
     }
 
+    public override void OnRoundStart()
+    {
+        FindAbilities();
+
+        base.OnRoundStart();
+        
+        previousUpdateTime = InGame.instance.GetSimulation().roundStartTime;
+        ActivateTimeStop(previousUpdateTime);   // have to timestop here as OnUpdate only timestops when the TIME_STOP_INTERVAL is exceeded
+    }
+
+    // activates a timestop and updates lastTimeStopActivation
     private static void ActivateTimeStop(int currentTime)
     {
         var inGame = InGame.instance;
@@ -94,27 +100,16 @@ public class ToInfinity : BloonsTD6Mod
         // MelonLogger.Msg($"Time stop activated at: {lastTimeStopActivation}");
     }
 
-    public override void OnMatchStart()
-    {
-        base.OnMatchStart();
-
-        FindAbilities();
-    }
-
     public override void OnBloonCreated(Bloon bloon)
     {
         base.OnBloonCreated(bloon);
 
+        // Add new bads to the bads list
         if (Settings.EnableMod && bloon.model.name.StartsWith("Bad"))
             bads.Add(bloon);
     }
 
-    private void HandleAbilities()
-    {
-        if (hex != null && hex.IsReady) hex.Activate();
-        if (hook != null && hook.IsReady && bads.Count > 0) hook.Activate();
-    }
-
+    // find the hex and hook abilities to automate.
     public void FindAbilities()
     {
         hex = null;

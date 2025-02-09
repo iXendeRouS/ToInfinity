@@ -1,6 +1,5 @@
 ﻿using BTD_Mod_Helper.Api.Data;
 using BTD_Mod_Helper.Api.ModOptions;
-using UnityEngine;
 
 namespace ToInfinity
 {
@@ -19,11 +18,6 @@ namespace ToInfinity
         public static readonly ModSettingBool CreateSoundOn = new(true)
         {
             displayName = "CreateSoundOn"
-        };
-
-        public static readonly ModSettingHotkey ToggleAutoTimestop = new(KeyCode.Backslash)
-        {
-            description = "ToggleAutoTimestop",
         };
     }
 }
